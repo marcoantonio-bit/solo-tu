@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+<title>Para Ti 💌</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body { background:#0a0010; font-family:'Georgia',serif; min-height:100vh; overflow-x:hidden; color:#f5e6ff; }
+
+#petalCanvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+#lyricRain   { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; overflow:hidden; }
+
+.lyric-drop {
+  position:absolute; color:rgba(255,200,240,0.45); font-size:13px; font-style:italic;
+  white-space:nowrap; animation:fallDown linear infinite; text-shadow:0 0 8px rgba(255,180,220,0.4);
+}
+@keyframes fallDown {
+  0%  { transform:translateY(-60px); opacity:0; }
+  10% { opacity:1; } 90% { opacity:0.6; }
+  100%{ transform:translateY(110vh); opacity:0; }
+}
+
+.main { position:relative; z-index:10; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:30px 15px 60px; }
+
+.title-area { text-align:center; margin-bottom:30px; animation:fadeInDown 1.5s ease; }
+@keyframes fadeInDown { from{opacity:0;transform:translateY(-30px);} to{opacity:1;transform:translateY(0);} }
+.title-area h1 { font-size:clamp(32px,10vw,52px); color:#f9d4ff; letter-spacing:4px; text-shadow:0 0 30px rgba(200,100,255,0.5); margin-bottom:8px; }
+.title-area p  { font-size:clamp(10px,3.5vw,14px); color:rgba(255,200,240,0.6); letter-spacing:2px; text-transform:uppercase; }
+
+.buttons-row { display:flex; flex-wrap:wrap; justify-content:center; gap:15px; margin-bottom:40px; animation:fadeInUp 1.8s ease; }
+@keyframes fadeInUp { from{opacity:0;transform:translateY(30px);} to{opacity:1;transform:translateY(0);} }
+
+/* --- Botón con gatito --- */
+.carta-btn {
+  background:rgba(255,255,255,0.04);
+  border:1px solid;
+  border-radius:22px;
+  cursor:pointer;
+  font-family:'Georgia',serif;
+  display:flex; flex-direction:column; align-items:center;
+  width:clamp(100px, 28vw, 128px);
+  padding:0;
+  transition:transform 0.35s ease, box-shadow 0.35s ease, border-color 0.3s;
+  position:relative; overflow:hidden;
+}
+.carta-btn:hover, .carta-btn:active { transform:translateY(-5px) scale(1.03); }
+
+.cat-wrap { width:100%; height:clamp(70px, 20vw, 88px); display:flex; justify-content:center; align-items:flex-end; padding:8px 6px 0; overflow:visible; }
+.cat-wrap svg { width:clamp(60px, 18vw, 78px); height:auto; overflow:visible; }
+
+.btn-label { padding:6px 8px 12px; font-size:clamp(9px, 3vw, 11.5px); letter-spacing:1.5px; text-align:center; line-height:1.3; }
+
+.carta-btn.roja    { border-color:rgba(255,107,138,0.45); }
+.carta-btn.roja:hover, .carta-btn.roja:active   { box-shadow:0 0 25px rgba(255,107,138,0.4); border-color:#ff6b8a; }
+.carta-btn.roja .btn-label { color:#ff9bb5; text-shadow:0 0 10px #ff6b8a; }
+
+.carta-btn.azul    { border-color:rgba(107,176,255,0.45); }
+.carta-btn.azul:hover, .carta-btn.azul:active   { box-shadow:0 0 25px rgba(107,176,255,0.4); border-color:#6bb0ff; }
+.carta-btn.azul .btn-label { color:#9bcfff; text-shadow:0 0 10px #6bb0ff; }
+
+.carta-btn.amarilla { border-color:rgba(255,215,107,0.45); }
+.carta-btn.amarilla:hover, .carta-btn.amarilla:active { box-shadow:0 0 25px rgba(255,215,107,0.4); border-color:#ffd76b; }
+.carta-btn.amarilla .btn-label { color:#ffe99b; text-shadow:0 0 10px #ffd76b; }
+
+.carta-btn.lila    { border-color:rgba(196,107,255,0.45); }
+.carta-btn.lila:hover, .carta-btn.lila:active   { box-shadow:0 0 25px rgba(196,107,255,0.4); border-color:#c46bff; }
+.carta-btn.lila .btn-label { color:#d99bff; text-shadow:0 0 10px #c46bff; }
+
+.carta-btn.blanca  { border-color:rgba(255,255,255,0.22); }
+.carta-btn.blanca:hover, .carta-btn.blanca:active { box-shadow:0 0 25px rgba(255,255,255,0.2); border-color:rgba(255,255,255,0.6); }
+.carta-btn.blanca .btn-label { color:rgba(255,255,255,0.88); }
+
+/* ===== ANIMACIONES GATITOS ===== */
+@keyframes jumpBounce {
+  0%,100%{ transform:translateY(0) scaleY(1); }
+  35%    { transform:translateY(-14px) scaleY(1.06); }
+  55%    { transform:translateY(-8px); }
+  70%    { transform:translateY(-12px); }
+}
+@keyframes heartbeat {
+  0%,100%{ transform:scale(1); opacity:1; }
+  40%    { transform:scale(1.45) translateY(-5px); opacity:0.85; }
+}
+.anim-jump   { animation:jumpBounce 1.3s ease-in-out infinite; }
+.anim-heart  { animation:heartbeat 1.3s ease-in-out infinite; }
+
+@keyframes sleepFloat {
+  0%,100%{ transform:translateY(0) rotate(-2deg); }
+  50%    { transform:translateY(-6px) rotate(1.5deg); }
+}
+@keyframes zFloat {
+  0%,100%{ opacity:0.2; transform:translateY(0) scale(0.8); }
+  50%    { opacity:1;   transform:translateY(-8px) scale(1); }
+}
+.anim-sleep  { animation:sleepFloat 2.4s ease-in-out infinite; }
+.anim-z1     { animation:zFloat 2.4s ease-in-out 0s infinite; }
+.anim-z2     { animation:zFloat 2.4s ease-in-out 0.8s infinite; }
+.anim-z3     { animation:zFloat 2.4s ease-in-out 1.6s infinite; }
+
+@keyframes tailWag {
+  0%,100%{ transform:rotate(0deg); }
+  25%    { transform:rotate(22deg); }
+  75%    { transform:rotate(-22deg); }
+}
+.anim-tail   { animation:tailWag 0.65s ease-in-out infinite; transform-origin:5% 60%; }
+
+@keyframes danceBody {
+  0%,100%{ transform:rotate(-5deg) translateY(0); }
+  25%    { transform:rotate(5deg) translateY(-7px); }
+  50%    { transform:rotate(-3deg) translateY(-4px); }
+  75%    { transform:rotate(4deg) translateY(-9px); }
+}
+@keyframes noteFloat {
+  0%,100%{ opacity:0.2; transform:translateY(0); }
+  50%    { opacity:0.9; transform:translateY(-7px); }
+}
+.anim-dance  { animation:danceBody 0.95s ease-in-out infinite; }
+.anim-note1  { animation:noteFloat 0.95s ease-in-out 0s infinite; }
+.anim-note2  { animation:noteFloat 0.95s ease-in-out 0.47s infinite; }
+
+@keyframes hugPulse {
+  0%,100%{ transform:scale(1); }
+  40%    { transform:scale(1.07) translateY(-3px); }
+}
+@keyframes heartHug {
+  0%,100%{ transform:scale(1) translateY(0); opacity:1; }
+  45%    { transform:scale(1.5) translateY(-7px); opacity:0.8; }
+}
+.anim-hug    { animation:hugPulse 1.5s ease-in-out infinite; }
+.anim-hrt    { animation:heartHug 1.5s ease-in-out infinite; }
+
+/* ===== CARTA ABIERTA ===== */
+.carta-container { width:100%; max-width:550px; display:none; animation:cartaAbre 0.6s cubic-bezier(0.34,1.56,0.64,1); margin:0 auto; }
+.carta-container.visible { display:block; }
+@keyframes cartaAbre { from{opacity:0;transform:scale(0.7) rotateY(-20deg);} to{opacity:1;transform:scale(1) rotateY(0);} }
+
+.carta { background:linear-gradient(135deg,rgba(30,5,50,0.95),rgba(15,5,35,0.98)); border:1px solid; border-radius:20px; padding:clamp(25px, 8vw, 50px) clamp(20px, 6vw, 45px); position:relative; overflow:hidden; }
+.carta::before { content:''; position:absolute; inset:0; border-radius:20px; opacity:0.08; background:radial-gradient(ellipse at top right,white,transparent 60%); pointer-events:none; }
+.carta.roja     { border-color:rgba(255,107,138,0.4); box-shadow:0 0 40px rgba(255,107,138,0.15),inset 0 0 30px rgba(255,107,138,0.05); }
+.carta.azul     { border-color:rgba(107,176,255,0.4); box-shadow:0 0 40px rgba(107,176,255,0.15),inset 0 0 30px rgba(107,176,255,0.05); }
+.carta.amarilla { border-color:rgba(255,215,107,0.4); box-shadow:0 0 40px rgba(255,215,107,0.15),inset 0 0 30px rgba(255,215,107,0.05); }
+.carta.lila     { border-color:rgba(196,107,255,0.4); box-shadow:0 0 40px rgba(196,107,255,0.15),inset 0 0 30px rgba(196,107,255,0.05); }
+.carta.blanca   { border-color:rgba(255,255,255,0.2); box-shadow:0 0 40px rgba(255,255,255,0.08),inset 0 0 30px rgba(255,255,255,0.03); }
+
+.rose-frame { display:flex; justify-content:center; margin-bottom:20px; }
+.rose-svg { width:clamp(60px, 20vw, 90px); height:auto; animation:roseFloat 3s ease-in-out infinite; filter:drop-shadow(0 0 15px currentColor); }
+@keyframes roseFloat { 0%,100%{transform:translateY(0) rotate(-3deg);} 50%{transform:translateY(-8px) rotate(3deg);} }
+
+.carta-titulo    { text-align:center; font-size:clamp(16px, 5vw, 22px); letter-spacing:2px; margin-bottom:6px; }
+.carta-subtitulo { text-align:center; font-size:clamp(9px, 3vw, 12px); letter-spacing:3px; color:rgba(255,200,240,0.5); text-transform:uppercase; margin-bottom:25px; }
+.carta-divider   { text-align:center; font-size:16px; margin-bottom:25px; opacity:0.5; letter-spacing:6px; }
+.carta-texto     { font-size:clamp(12px, 4vw, 15px); line-height:1.8; color:rgba(255,230,255,0.88); text-align:center; font-style:italic; }
+.carta-firma     { text-align:right; margin-top:30px; font-size:clamp(10px, 3vw, 13px); color:rgba(255,200,240,0.5); letter-spacing:2px; }
+
+.close-btn { display:block; margin:20px auto 0; background:transparent; border:1px solid rgba(255,200,240,0.3); color:rgba(255,200,240,0.6); padding:8px 25px; border-radius:50px; cursor:pointer; font-family:'Georgia',serif; font-size:clamp(10px, 3.5vw, 12px); letter-spacing:3px; transition:all 0.3s; }
+.close-btn:hover, .close-btn:active { border-color:rgba(255,200,240,0.7); color:rgba(255,200,240,0.9); box-shadow:0 0 12px rgba(255,200,240,0.15); }
+
+.music-note { position:fixed; bottom:12px; right:15px; font-size:clamp(10px, 3vw, 12px); color:rgba(255,180,220,0.4); letter-spacing:2px; z-index:20; animation:pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:0.4;} 50%{opacity:0.9;} }
+</style>
+</head>
+<body>
+<canvas id="petalCanvas"></canvas>
+<div id="lyricRain"></div>
+
+<!-- AUDIO CON REPRODUCCIÓN AUTOMÁTICA FORZADA -->
+<audio id="bgMusic" loop preload="auto" autoplay>
+  <source src="musica.mp3" type="audio/mpeg">
+  Tu navegador no soporta audio.
+</audio>
+
+<div class="main">
+  <div class="title-area">
+    <h1>Para Ti</h1>
+    <p>✦ Sherine — Kalam Eineh ✦</p>
+  </div>
+
+  <div class="buttons-row">
+    <!-- ❤️ ROJA -->
+    <button class="carta-btn roja" onclick="abrirCarta('roja')">
+      <div class="cat-wrap">
+        <svg viewBox="0 0 78 76" fill="none">
+          <g class="anim-heart">
+            <path d="M39 9 C39 9 35 4 31.5 7 C28 10 31.5 15 39 21 C46.5 15 50 10 46.5 7 C43 4 39 9 39 9Z" fill="#ff4466"/>
+          </g>
+          <g class="anim-jump">
+            <ellipse cx="39" cy="56" rx="20" ry="15" fill="#888899"/>
+            <circle  cx="39" cy="36" r="15" fill="#9898aa"/>
+            <polygon points="27,25 22,14 31,23" fill="#9898aa"/>
+            <polygon points="51,25 56,14 47,23" fill="#9898aa"/>
+            <polygon points="28,24 24,15 31,22" fill="#ffb0c8"/>
+            <polygon points="50,24 54,15 47,22" fill="#ffb0c8"/>
+            <ellipse cx="33" cy="35" rx="4" ry="4.5" fill="white"/>
+            <ellipse cx="45" cy="35" rx="4" ry="4.5" fill="white"/>
+            <circle  cx="33" cy="36" r="2.6" fill="#1a1a2e"/>
+            <circle  cx="45" cy="36" r="2.6" fill="#1a1a2e"/>
+            <circle  cx="34" cy="35" r="1"   fill="white"/>
+            <circle  cx="46" cy="35" r="1"   fill="white"/>
+            <ellipse cx="39" cy="41" rx="2"  ry="1.3" fill="#ffb0c8"/>
+            <path d="M37 42.5 Q39 45 41 42.5" fill="none" stroke="#666" stroke-width="1"/>
+            <line x1="41" y1="41" x2="52" y2="39" stroke="#bbb" stroke-width="0.8"/>
+            <line x1="41" y1="42" x2="52" y2="43" stroke="#bbb" stroke-width="0.8"/>
+            <line x1="37" y1="41" x2="26" y2="39" stroke="#bbb" stroke-width="0.8"/>
+            <line x1="37" y1="42" x2="26" y2="43" stroke="#bbb" stroke-width="0.8"/>
+            <ellipse cx="28" cy="68" rx="7"  ry="4.5" fill="#888899"/>
+            <ellipse cx="50" cy="68" rx="7"  ry="4.5" fill="#888899"/>
+            <path d="M59 55 Q70 44 66 33" fill="none" stroke="#888899" stroke-width="4" stroke-linecap="round"/>
+          </g>
+        </svg>
+      </div>
+      <div class="btn-label">🌹 Rosa Roja</div>
+    </button>
+
+    <!-- 💙 AZUL -->
+    <button class="carta-btn azul" onclick="abrirCarta('azul')">
+      <div class="cat-wrap">
+        <svg viewBox="0 0 78 76" fill="none">
+          <text class="anim-z1" x="50" y="28" font-size="9"  fill="#5599ff" font-family="Georgia" font-style="italic">z</text>
+          <text class="anim-z2" x="57" y="20" font-size="11" fill="#5599ff" font-family="Georgia" font-style="italic">z</text>
+          <text class="anim-z3" x="65" y="12" font-size="13" fill="#5599ff" font-family="Georgia" font-style="italic">z</text>
+          <g class="anim-sleep">
+            <ellipse cx="40" cy="57" rx="26" ry="13" fill="#e8e8f8"/>
+            <circle  cx="28" cy="48" r="14"  fill="#f0f0ff"/>
+            <polygon points="17,37 12,26 22,35" fill="#f0f0ff"/>
+            <polygon points="37,37 42,26 33,35" fill="#f0f0ff"/>
+            <polygon points="18,36 14,28 21,34" fill="#ffb0c8"/>
+            <polygon points="36,36 40,28 32,34" fill="#ffb0c8"/>
+            <path d="M22 47 Q25 44 28 47" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M28 47 Q31 44 34 47" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round"/>
+            <ellipse cx="28" cy="52" rx="1.5" ry="1" fill="#ffb0c8"/>
+            <path d="M26 54 Q28 56 30 54" fill="none" stroke="#aaa" stroke-width="1"/>
+            <line x1="29" y1="51" x2="40" y2="49" stroke="#ccc" stroke-width="0.7"/>
+            <line x1="29" y1="52" x2="40" y2="53" stroke="#ccc" stroke-width="0.7"/>
+            <line x1="27" y1="51" x2="16" y2="49" stroke="#ccc" stroke-width="0.7"/>
+            <line x1="27" y1="52" x2="16" y2="53" stroke="#ccc" stroke-width="0.7"/>
+            <ellipse cx="54" cy="57" rx="8" ry="5" fill="#dde0f5"/>
+            <ellipse cx="42" cy="66" rx="8" ry="4" fill="#dde0f5"/>
+            <path d="M64 54 Q74 48 71 58 Q68 65 61 63" fill="none" stroke="#ccd0ec" stroke-width="4" stroke-linecap="round"/>
+          </g>
+        </svg>
+      </div>
+      <div class="btn-label">💙 Rosa Azul</div>
+    </button>
+
+    <!-- 🌼 AMARILLA -->
+    <button class="carta-btn amarilla" onclick="abrirCarta('amarilla')">
+      <div class="cat-wrap">
+        <svg viewBox="0 0 78 76" fill="none">
+          <g class="anim-tail">
+            <path d="M58 55 Q72 42 74 28 Q75 19 67 17" fill="none" stroke="#c89830" stroke-width="5" stroke-linecap="round"/>
+          </g>
+          <ellipse cx="37" cy="54" rx="20" ry="14" fill="#d4a848"/>
+          <path d="M24 49 Q37 47 50 49" fill="none" stroke="#b08828" stroke-width="1.5"/>
+          <path d="M21 55 Q37 53 53 55" fill="none" stroke="#b08828" stroke-width="1.4"/>
+          <circle cx="37" cy="34" r="15" fill="#d4a848"/>
+          <path d="M33 21 Q37 19 41 21" fill="none" stroke="#b08828" stroke-width="1.5"/>
+          <polygon points="25,23 20,12 29,21" fill="#d4a848"/>
+          <polygon points="49,23 54,12 45,21" fill="#d4a848"/>
+          <polygon points="26,22 22,14 28,20" fill="#ffb0c8"/>
+          <polygon points="48,22 52,14 46,20" fill="#ffb0c8"/>
+          <ellipse cx="31" cy="33" rx="4" ry="4.5" fill="white"/>
+          <ellipse cx="43" cy="33" rx="4" ry="4.5" fill="white"/>
+          <circle  cx="31" cy="34" r="2.7" fill="#2a1a00"/>
+          <circle  cx="43" cy="34" r="2.7" fill="#2a1a00"/>
+          <circle  cx="32" cy="33" r="1"   fill="white"/>
+          <circle  cx="44" cy="33" r="1"   fill="white"/>
+          <ellipse cx="37" cy="39" rx="2"  ry="1.4" fill="#ffb0c8"/>
+          <path d="M35 40.5 Q37 43 39 40.5" fill="none" stroke="#888" stroke-width="1"/>
+          <line x1="39" y1="39" x2="51" y2="37" stroke="#c0a050" stroke-width="0.8"/>
+          <line x1="39" y1="40" x2="51" y2="41" stroke="#c0a050" stroke-width="0.8"/>
+          <line x1="35" y1="39" x2="23" y2="37" stroke="#c0a050" stroke-width="0.8"/>
+          <line x1="35" y1="40" x2="23" y2="41" stroke="#c0a050" stroke-width="0.8"/>
+          <ellipse cx="26" cy="65" rx="7"  ry="4.5" fill="#d4a848"/>
+          <ellipse cx="48" cy="65" rx="7"  ry="4.5" fill="#d4a848"/>
+        </svg>
+      </div>
+      <div class="btn-label">🌼 Amarilla</div>
+    </button>
+
+    <!-- 💜 LILA -->
+    <button class="carta-btn lila" onclick="abrirCarta('lila')">
+      <div class="cat-wrap">
+        <svg viewBox="0 0 78 76" fill="none">
+          <text class="anim-note1" x="8"  y="22" font-size="13" fill="#c46bff" font-family="Georgia">♪</text>
+          <text class="anim-note2" x="62" y="18" font-size="15" fill="#c46bff" font-family="Georgia">♫</text>
+          <g class="anim-dance">
+            <ellipse cx="39" cy="54" rx="16" ry="14" fill="#b870d8"/>
+            <path d="M23 48 Q14 35 18 25" fill="none" stroke="#b870d8" stroke-width="5" stroke-linecap="round"/>
+            <path d="M55 48 Q64 35 60 25" fill="none" stroke="#b870d8" stroke-width="5" stroke-linecap="round"/>
+            <circle cx="18" cy="23" r="5" fill="#b870d8"/>
+            <circle cx="60" cy="23" r="5" fill="#b870d8"/>
+            <circle  cx="39" cy="33" r="15" fill="#c880e8"/>
+            <polygon points="27,22 22,11 31,20" fill="#c880e8"/>
+            <polygon points="51,22 56,11 47,20" fill="#c880e8"/>
+            <polygon points="28,21 24,13 30,19" fill="#f5b8ff"/>
+            <polygon points="50,21 54,13 48,19" fill="#f5b8ff"/>
+            <ellipse cx="33" cy="32" rx="4"  ry="4.5" fill="white"/>
+            <ellipse cx="45" cy="32" rx="4"  ry="4.5" fill="white"/>
+            <circle  cx="33" cy="33" r="2.8" fill="#1a0030"/>
+            <circle  cx="45" cy="33" r="2.8" fill="#1a0030"/>
+            <circle  cx="34" cy="32" r="1.1" fill="white"/>
+            <circle  cx="46" cy="32" r="1.1" fill="white"/>
+            <ellipse cx="39" cy="38" rx="2"  ry="1.4" fill="#f5b8ff"/>
+            <path d="M36.5 39.5 Q39 43 41.5 39.5" fill="none" stroke="#9944bb" stroke-width="1.2"/>
+            <ellipse cx="31" cy="66" rx="7"  ry="4"  fill="#b870d8" transform="rotate(-12 31 66)"/>
+            <ellipse cx="49" cy="64" rx="7"  ry="4"  fill="#b870d8" transform="rotate(8 49 64)"/>
+          </g>
+        </svg>
+      </div>
+      <div class="btn-label">💜 Rosa Lila</div>
+    </button>
+
+    <!-- 🤍 BLANCA -->
+    <button class="carta-btn blanca" onclick="abrirCarta('blanca')">
+      <div class="cat-wrap">
+        <svg viewBox="0 0 78 76" fill="none">
+          <g class="anim-hrt">
+            <path d="M39 8 C39 8 36 4 33 6.5 C30 9 33 13.5 39 19 C45 13.5 48 9 45 6.5 C42 4 39 8 39 8Z" fill="#ff6688"/>
+          </g>
+          <g class="anim-hug">
+            <ellipse cx="43" cy="57" rx="19" ry="13" fill="#888899"/>
+            <circle  cx="45" cy="39" r="14"  fill="#9898aa"/>
+            <polygon points="34,29 29,18 38,27" fill="#9898aa"/>
+            <polygon points="54,29 59,18 50,27" fill="#9898aa"/>
+            <polygon points="35,28 31,20 37,26" fill="#ffb0c8"/>
+            <polygon points="53,28 57,20 51,26" fill="#ffb0c8"/>
+            <path d="M39 38 Q42 35 45 38" fill="none" stroke="#555" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M45 38 Q48 35 51 38" fill="none" stroke="#555" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M25 54 Q17 43 21 32" fill="none" stroke="#888899" stroke-width="5" stroke-linecap="round"/>
+            <path d="M61 54 Q69 43 65 32" fill="none" stroke="#888899" stroke-width="5" stroke-linecap="round"/>
+            <ellipse cx="34" cy="59" rx="14" ry="12" fill="#f0f0ff"/>
+            <circle  cx="31" cy="46" r="13"  fill="#f5f5ff"/>
+            <polygon points="21,36 16,26 25,34" fill="#f5f5ff"/>
+            <polygon points="39,36 44,26 36,34" fill="#f5f5ff"/>
+            <polygon points="22,35 18,28 24,33" fill="#ffb0c8"/>
+            <polygon points="38,35 42,28 37,33" fill="#ffb0c8"/>
+            <ellipse cx="27" cy="45" rx="3.5" ry="4" fill="white"/>
+            <ellipse cx="36" cy="45" rx="3.5" ry="4" fill="white"/>
+            <circle  cx="27" cy="46" r="2.2" fill="#1a1a2e"/>
+            <circle  cx="36" cy="46" r="2.2" fill="#1a1a2e"/>
+            <circle  cx="28" cy="45" r="0.9" fill="white"/>
+            <circle  cx="37" cy="45" r="0.9" fill="white"/>
+            <ellipse cx="31" cy="51" rx="1.5" ry="1" fill="#ffb0c8"/>
+            <path d="M29.5 52.5 Q31 54 32.5 52.5" fill="none" stroke="#aaa" stroke-width="0.9"/>
+          </g>
+        </svg>
+      </div>
+      <div class="btn-label">🤍 Rosa Blanca</div>
+    </button>
+  </div>
+
+  <!-- ===== CARTAS ===== -->
+  <div class="carta-container" id="carta-roja">
+    <div class="carta roja">
+      <div class="rose-frame">
+        <svg class="rose-svg" style="color:#ff4466" viewBox="0 0 100 100" fill="none">
+          <circle cx="50" cy="42" r="18" fill="#ff4466" opacity="0.9"/>
+          <ellipse cx="38" cy="38" rx="14" ry="10" fill="#ff6688" transform="rotate(-30 38 38)"/>
+          <ellipse cx="62" cy="38" rx="14" ry="10" fill="#ff2255" transform="rotate(30 62 38)"/>
+          <ellipse cx="50" cy="28" rx="12" ry="9" fill="#ff557a"/>
+          <ellipse cx="50" cy="52" rx="12" ry="9" fill="#cc2244"/>
+          <circle cx="50" cy="42" r="8" fill="#ff6677" opacity="0.7"/>
+          <line x1="50" y1="60" x2="50" y2="88" stroke="#3a8a3a" stroke-width="2.5"/>
+          <ellipse cx="38" cy="75" rx="10" ry="6" fill="#3a8a3a" transform="rotate(-30 38 75)"/>
+          <ellipse cx="62" cy="70" rx="10" ry="6" fill="#2d7a2d" transform="rotate(25 62 70)"/>
+          <animateTransform attributeName="transform" type="rotate" values="-3 50 42;3 50 42;-3 50 42" dur="3s" repeatCount="indefinite"/>
+        </svg>
+      </div>
+      <div class="carta-titulo" style="color:#ffaacc">Una Rosa para Ti</div>
+      <div class="carta-subtitulo">amor sin palabras</div>
+      <div class="carta-divider">· · ·</div>
+      <div class="carta-texto">
+        Hay cosas que los ojos dicen<br>sin necesidad de pronunciarlas.<br><br>
+        Tu mirada me habla más<br>que mil palabras juntas.<br><br>
+        Como dice la canción,<br><em>"كلام عينيه"</em> —<br>
+        las palabras de tus ojos<br>son el idioma más bello del mundo.<br><br>
+        Esta rosa roja es todo lo que siento<br>y no sé cómo decirte.
+      </div>
+      <div class="carta-firma">— con todo mi corazón ♥</div>
+    </div>
+    <button class="close-btn" onclick="cerrarCarta()">✕ cerrar</button>
+  </div>
+
+  <div class="carta-container" id="carta-azul">
+    <div class="carta azul">
+      <div class="rose-frame">
+        <svg class="rose-svg" style="color:#3377ff" viewBox="0 0 100 100" fill="none">
+          <circle cx="50" cy="42" r="18" fill="#3377ff" opacity="0.9"/>
+          <ellipse cx="38" cy="38" rx="14" ry="10" fill="#5599ff" transform="rotate(-30 38 38)"/>
+          <ellipse cx="62" cy="38" rx="14" ry="10" fill="#2255dd" transform="rotate(30 62 38)"/>
+          <ellipse cx="50" cy="28" rx="12" ry="9" fill="#4488ff"/>
+          <ellipse cx="50" cy="52" rx="12" ry="9" fill="#1144cc"/>
+          <circle cx="50" cy="42" r="8" fill="#6699ff" opacity="0.7"/>
+          <line x1="50" y1="60" x2="50" y2="88" stroke="#3a8a3a" stroke-width="2.5"/>
+          <ellipse cx="38" cy="75" rx="10" ry="6" fill="#3a8a3a" transform="rotate(-30 38 75)"/>
+          <ellipse cx="62" cy="70" rx="10" ry="6" fill="#2d7a2d" transform="rotate(25 62 70)"/>
+          <animateTransform attributeName="transform" type="rotate" values="-3 50 42;3 50 42;-3 50 42" dur="3.5s" repeatCount="indefinite"/>
+        </svg>
+      </div>
+      <div class="carta-titulo" style="color:#99ccff">Lo Que No Se Dice</div>
+      <div class="carta-subtitulo">sentimientos profundos</div>
+      <div class="carta-divider">· · ·</div>
+      <div class="carta-texto">
+        Como el azul del océano<br>que no tiene fondo visible,<br><br>
+        así es lo que guardo<br>para ti en silencio.<br><br>
+        Una rosa azul no existe en la naturaleza —<br>
+        pero existe en lo que siento,<br>en lo imposible que se vuelve posible<br>cuando pienso en ti.<br><br>
+        Eres la rareza más hermosa<br>de mi mundo.
+      </div>
+      <div class="carta-firma">— desde lo más profundo 💙</div>
+    </div>
+    <button class="close-btn" onclick="cerrarCarta()">✕ cerrar</button>
+  </div>
+
+  <div class="carta-container" id="carta-amarilla">
+    <div class="carta amarilla">
+      <div class="rose-frame">
+        <svg class="rose-svg" style="color:#ffcc22" viewBox="0 0 100 100" fill="none">
+          <circle cx="50" cy="42" r="18" fill="#ffcc22" opacity="0.9"/>
+          <ellipse cx="38" cy="38" rx="14" ry="10" fill="#ffdd44" transform="rotate(-30 38 38)"/>
+          <ellipse cx="62" cy="38" rx="14" ry="10" fill="#ffaa00" transform="rotate(30 62 38)"/>
+          <ellipse cx="50" cy="28" rx="12" ry="9" fill="#ffcc33"/>
+          <ellipse cx="50" cy="52" rx="12" ry="9" fill="#dd9900"/>
+          <circle cx="50" cy="42" r="8" fill="#ffee66" opacity="0.7"/>
+          <line x1="50" y1="60" x2="50" y2="88" stroke="#3a8a3a" stroke-width="2.5"/>
+          <ellipse cx="38" cy="75" rx="10" ry="6" fill="#3a8a3a" transform="rotate(-30 38 75)"/>
+          <ellipse cx="62" cy="70" rx="10" ry="6" fill="#2d7a2d" transform="rotate(25 62 70)"/>
+          <animateTransform attributeName="transform" type="rotate" values="-3 50 42;3 50 42;-3 50 42" dur="2.8s" repeatCount="indefinite"/>
+        </svg>
+      </div>
+      <div class="carta-titulo" style="color:#ffe066">La Alegría que Me Das</div>
+      <div class="carta-subtitulo">cada momento contigo</div>
+      <div class="carta-divider">· · ·</div>
+      <div class="carta-texto">
+        Como la luz del sol en la mañana,<br>así llegas tú a mis pensamientos.<br><br>
+        Una rosa amarilla significa amistad,<br>pero también significa<br>
+        que me alegras el alma<br>con solo existir.<br><br>
+        Gracias por hacer que mis días<br>brillen de una manera distinta.<br><br>
+        Ojalá supieras cuánto<br>me iluminas sin darte cuenta.
+      </div>
+      <div class="carta-firma">— con gratitud y amor 🌟</div>
+    </div>
+    <button class="close-btn" onclick="cerrarCarta()">✕ cerrar</button>
+  </div>
+
+  <div class="carta-container" id="carta-lila">
+    <div class="carta lila">
+      <div class="rose-frame">
+        <svg class="rose-svg" style="color:#aa44ee" viewBox="0 0 100 100" fill="none">
+          <circle cx="50" cy="42" r="18" fill="#aa44ee" opacity="0.9"/>
+          <ellipse cx="38" cy="38" rx="14" ry="10" fill="#cc66ff" transform="rotate(-30 38 38)"/>
+          <ellipse cx="62" cy="38" rx="14" ry="10" fill="#9933cc" transform="rotate(30 62 38)"/>
+          <ellipse cx="50" cy="28" rx="12" ry="9" fill="#bb55ff"/>
+          <ellipse cx="50" cy="52" rx="12" ry="9" fill="#8822bb"/>
+          <circle cx="50" cy="42" r="8" fill="#dd88ff" opacity="0.7"/>
+          <line x1="50" y1="60" x2="50" y2="88" stroke="#3a8a3a" stroke-width="2.5"/>
+          <ellipse cx="38" cy="75" rx="10" ry="6" fill="#3a8a3a" transform="rotate(-30 38 75)"/>
+          <ellipse cx="62" cy="70" rx="10" ry="6" fill="#2d7a2d" transform="rotate(25 62 70)"/>
+          <animateTransform attributeName="transform" type="rotate" values="-3 50 42;3 50 42;-3 50 42" dur="4s" repeatCount="indefinite"/>
+        </svg>
+      </div>
+      <div class="carta-titulo" style="color:#ddaaff">El Sueño que Eres</div>
+      <div class="carta-subtitulo">entre lo real y lo mágico</div>
+      <div class="carta-divider">· · ·</div>
+      <div class="carta-texto">
+        A veces pienso que te inventé,<br>que nadie puede ser tan especial.<br><br>
+        Y luego apareces en mi mente<br>y confirmas que eres real,<br>más real que cualquier sueño.<br><br>
+        La rosa lila es para los sueños<br>que no se atreven a decirse en voz alta,<br>
+        para los sentimientos que viven<br>en el espacio entre dos miradas.<br><br>
+        Este espacio que solo tú y yo conocemos.
+      </div>
+      <div class="carta-firma">— desde mis sueños 💜</div>
+    </div>
+    <button class="close-btn" onclick="cerrarCarta()">✕ cerrar</button>
+  </div>
+
+  <div class="carta-container" id="carta-blanca">
+    <div class="carta blanca">
+      <div class="rose-frame">
+        <svg class="rose-svg" style="color:#dde8ff" viewBox="0 0 100 100" fill="none">
+          <circle cx="50" cy="42" r="18" fill="#dde8ff" opacity="0.9"/>
+          <ellipse cx="38" cy="38" rx="14" ry="10" fill="#eef2ff" transform="rotate(-30 38 38)"/>
+          <ellipse cx="62" cy="38" rx="14" ry="10" fill="#ccddff" transform="rotate(30 62 38)"/>
+          <ellipse cx="50" cy="28" rx="12" ry="9" fill="#e8eeff"/>
+          <ellipse cx="50" cy="52" rx="12" ry="9" fill="#bbccee"/>
+          <circle cx="50" cy="42" r="8" fill="#f5f8ff" opacity="0.8"/>
+          <line x1="50" y1="60" x2="50" y2="88" stroke="#3a8a3a" stroke-width="2.5"/>
+          <ellipse cx="38" cy="75" rx="10" ry="6" fill="#3a8a3a" transform="rotate(-30 38 75)"/>
+          <ellipse cx="62" cy="70" rx="10" ry="6" fill="#2d7a2d" transform="rotate(25 62 70)"/>
+          <animateTransform attributeName="transform" type="rotate" values="-3 50 42;3 50 42;-3 50 42" dur="3.2s" repeatCount="indefinite"/>
+        </svg>
+      </div>
+      <div class="carta-titulo" style="color:#eeeeff">Lo Más Puro</div>
+      <div class="carta-subtitulo">en silencio y en verdad</div>
+      <div class="carta-divider">· · ·</div>
+      <div class="carta-texto">
+        No necesito grandes palabras<br>para decirte lo que siento.<br><br>
+        La rosa blanca es pureza,<br>es lo más honesto que tengo:<br>
+        que cuando pienso en alguien especial,<br>siempre eres tú.<br><br>
+        No importa el tiempo,<br>no importan las distancias.<br><br>
+        Siempre habrá en mi corazón<br>un lugar reservado solo para ti.
+      </div>
+      <div class="carta-firma">— con lo más puro que tengo 🤍</div>
+    </div>
+    <button class="close-btn" onclick="cerrarCarta()">✕ cerrar</button>
+  </div>
+
+</div>
+
+<div class="music-note">♫ Kalam Eineh ♫</div>
+
+<script>
+const canvas=document.getElementById('petalCanvas'),ctx=canvas.getContext('2d');
+function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+resize(); window.addEventListener('resize',resize);
+
+const COLORS={roja:['#ff4466','#ff6688','#ff2244'],azul:['#3377ff','#5599ff','#2255dd'],amarilla:['#ffcc22','#ffdd44','#ffaa00'],lila:['#aa44ee','#cc66ff','#9933cc'],blanca:['#dde8ff','#eef2ff','#ffffff']};
+let petals=[];
+
+function mkPetal(fc){
+  const k=fc||['roja','azul','amarilla','lila','blanca'][Math.floor(Math.random()*5)];
+  const c=COLORS[k];
+  return{x:Math.random()*canvas.width,y:-20,size:5+Math.random()*9,color:c[Math.floor(Math.random()*c.length)],sy:0.8+Math.random()*1.4,sx:(Math.random()-0.5)*1.2,r:Math.random()*360,rs:(Math.random()-0.5)*3,o:0.6+Math.random()*0.4,s:Math.random()>0.5?'e':'d'};
+}
+
+for(let i=0;i<80;i++){const p=mkPetal();p.y=Math.random()*window.innerHeight;petals.push(p);}
+
+function drawP(p){
+  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r*Math.PI/180);ctx.globalAlpha=p.o;ctx.fillStyle=p.color;
+  if(p.s==='e'){ctx.beginPath();ctx.ellipse(0,0,p.size,p.size*0.55,0,0,Math.PI*2);ctx.fill();}
+  else{ctx.beginPath();ctx.moveTo(0,-p.size);ctx.bezierCurveTo(p.size*.8,-p.size*.4,p.size*.8,p.size*.4,0,p.size);ctx.bezierCurveTo(-p.size*.8,p.size*.4,-p.size*.8,-p.size*.4,0,-p.size);ctx.fill();}
+  ctx.restore();
+}
+
+let lt=0;
+function loop(ts){
+  const dt=Math.min((ts-lt)/16,3);lt=ts;ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let i=petals.length-1;i>=0;i--){const p=petals[i];p.y+=p.sy*dt;p.x+=p.sx*dt+Math.sin(p.y/60)*.4;p.r+=p.rs*dt;drawP(p);if(p.y>canvas.height+30)petals.splice(i,1);}
+  while(petals.length<90)petals.push(mkPetal());
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+const lyrics=['كلام عينيه','هواه قديم','بقولك إيه','عيني بتحبك','Kalam Eineh','Sus ojos hablan','Mi corazón','كلام عيونك','حبيبي','أنا بحبك','Para ti','شيرين','روحي','Te digo qué'];
+function dropLyric(){
+  const el=document.createElement('div');el.className='lyric-drop';
+  el.textContent=lyrics[Math.floor(Math.random()*lyrics.length)];
+  el.style.left=(Math.random()*95)+'vw';el.style.top='-60px';
+  const d=7+Math.random()*10;el.style.animationDuration=d+'s';
+  el.style.animationDelay=(Math.random()*3)+'s';el.style.fontSize=(11+Math.random()*5)+'px';
+  document.getElementById('lyricRain').appendChild(el);setTimeout(()=>el.remove(),(d+4)*1000);
+}
+setInterval(dropLyric,600);for(let i=0;i<12;i++)setTimeout(dropLyric,i*200);
+
+let ca=null;
+function abrirCarta(t){
+  if(ca)document.getElementById('carta-'+ca).classList.remove('visible');
+  ca=t;const el=document.getElementById('carta-'+t);el.classList.add('visible');
+  el.scrollIntoView({behavior:'smooth',block:'center'});
+  for(let i=0;i<22;i++){const p=mkPetal(t);p.y=Math.random()*120;petals.push(p);}
+}
+function cerrarCarta(){if(ca){document.getElementById('carta-'+ca).classList.remove('visible');ca=null;}}
+
+// ===== REPRODUCCIÓN AUTOMÁTICA MEJORADA PARA CELULAR =====
+window.addEventListener('load', () => {
+  const audio = document.getElementById('bgMusic');
+  audio.volume = 0.25;
+  audio.loop = true;
+  
+  // Intento de reproducción automática
+  const playPromise = audio.play();
+  
+  if (playPromise !== undefined) {
+    playPromise.catch(() => {
+      // Si falla, al primer toque en cualquier lugar suena
+      const startAudio = () => {
+        audio.play();
+        document.body.removeEventListener('touchstart', startAudio);
+        document.body.removeEventListener('click', startAudio);
+      };
+      document.body.addEventListener('touchstart', startAudio, { once: true });
+      document.body.addEventListener('click', startAudio, { once: true });
+    });
+  }
+});
+
+// También intentar reproducir al hacer scroll o tocar (por si acaso)
+document.body.addEventListener('touchstart', () => {
+  const audio = document.getElementById('bgMusic');
+  if (audio.paused) audio.play().catch(()=>{});
+}, { once: true });
+</script>
+</body>
+</html>
